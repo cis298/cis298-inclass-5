@@ -1,5 +1,6 @@
 package edu.kvcc.cis298.criminalintent;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -49,16 +50,30 @@ public class CrimeListFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUI();
+    }
+
     private void updateUI() {
         // Get the singleton of crimes
         CrimeLab crimeLab = CrimeLab.get(getActivity());
         // Pull out the list of crimes from the singleton
         List<Crime> crimes = crimeLab.getCrimes();
-        // Create a new adapter sending over the list of crimes
-        mAdapter = new CrimeAdapter(crimes);
-        // Set the adapter for the RecyclerView as the adapter we
-        // just created.
-        mCrimeRecyclerView.setAdapter(mAdapter);
+
+        // If coming back from detail view, the adapter
+        // may already exist and we just need to notify
+        // it that the data has changed.
+        if (mAdapter == null) {
+            // Create a new adapter sending over the list of crimes
+            mAdapter = new CrimeAdapter(crimes);
+            // Set the adapter for the RecyclerView as the adapter we
+            // just created.
+            mCrimeRecyclerView.setAdapter(mAdapter);
+        } else {
+            mAdapter.notifyDataSetChanged();
+        }
 
         // If you don't want anyone to be able to read your code
         // do this! It is the same as the above 4 lines.
@@ -108,11 +123,11 @@ public class CrimeListFragment extends Fragment {
 
         @Override
         public void onClick(View v) {
-            Toast.makeText(
+            Intent intent = CrimeActivity.newIntent(
                     getActivity(),
-                    mCrime.getTitle() + " clicked!",
-                    Toast.LENGTH_SHORT
-            ).show();
+                    mCrime.getId()
+            );
+            startActivity(intent);
         }
     }
 

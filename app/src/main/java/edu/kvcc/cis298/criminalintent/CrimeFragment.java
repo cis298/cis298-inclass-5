@@ -14,17 +14,47 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 
+import java.util.UUID;
+
 public class CrimeFragment extends Fragment {
+
+    // Key no for activity, so not operating at OS level, so no need
+    // to include the package name in the string.
+    private static final String ARG_CRIME_ID = "crime_id";
 
     private Crime mCrime;
     private EditText mTitleField;
     private Button mDateButton;
     private CheckBox mSolvedCheckbox;
 
+    // Setup a static method to create a new fragment.
+    // This is similar to an activity asking another activity
+    // how to get an intent to get it started. Only, now we
+    // are setting up a method to ask the Fragment how to get
+    // a new fragment of itself created.
+    public static CrimeFragment newInstance(UUID crimeId) {
+        // Bundle used to store fragment arguments
+        Bundle args = new Bundle();
+        // Again using serializable since UUID is a class instance
+        args.putSerializable(ARG_CRIME_ID, crimeId);
+
+        CrimeFragment fragment = new CrimeFragment();
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mCrime = new Crime();
+        // Get the fragment arguments for this fragment.
+        // Then retrieve the UUID from the fragment arguments.
+        // UUID is not a primitive type, so it can only be stored if
+        // it is serializable. Luckily UUID implements Serializable, so
+        // we can send it in Extras. As a result we use getSerializableExtra
+        // to retrieve it here.
+        UUID crimeId = (UUID) getArguments().getSerializable(ARG_CRIME_ID);
+        // Query the Singleton to get the specific Crime out.
+        mCrime = CrimeLab.get(getActivity()).getCrime(crimeId);
     }
 
     @Nullable
@@ -45,6 +75,7 @@ public class CrimeFragment extends Fragment {
         // the view v. In an activity, the method was right on the activity, so
         // it was shorter.
         mTitleField = (EditText) v.findViewById(R.id.crime_title);
+        mTitleField.setText(mCrime.getTitle());
         mTitleField.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -74,6 +105,7 @@ public class CrimeFragment extends Fragment {
         mDateButton.setEnabled(false);
 
         mSolvedCheckbox = (CheckBox)v.findViewById(R.id.crime_solved);
+        mSolvedCheckbox.setChecked(mCrime.isSolved());
         mSolvedCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(
