@@ -123,7 +123,7 @@ public class CrimeListFragment extends Fragment {
 
         @Override
         public void onClick(View v) {
-            Intent intent = CrimeActivity.newIntent(
+            Intent intent = CrimePagerActivity.newIntent(
                     getActivity(),
                     mCrime.getId()
             );
