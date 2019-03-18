@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.InputStream;
 import java.util.List;
 
 public class CrimeListFragment extends Fragment {
@@ -59,6 +60,14 @@ public class CrimeListFragment extends Fragment {
     private void updateUI() {
         // Get the singleton of crimes
         CrimeLab crimeLab = CrimeLab.get(getActivity());
+
+        // If the crimeLab is empty, load the crimes to populate the list
+        if (crimeLab.isEmpty() && !crimeLab.isDataLoadedOnce()) {
+            InputStream csvStream = getResources().openRawResource(R.raw.crimes);
+            crimeLab.loadCrimeList(csvStream);
+            //crimeLab.addDefaultCrimes();
+        }
+
         // Pull out the list of crimes from the singleton
         List<Crime> crimes = crimeLab.getCrimes();
 

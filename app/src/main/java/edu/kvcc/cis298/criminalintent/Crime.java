@@ -15,6 +15,13 @@ public class Crime {
         mDate = new Date();
     }
 
+    public Crime(UUID id, String title, Date date, boolean isSolved) {
+        mId = id;
+        mTitle = title;
+        mDate = date;
+        mSolved = isSolved;
+    }
+
     public UUID getId() {
         return mId;
     }
