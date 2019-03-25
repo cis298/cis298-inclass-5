@@ -5,9 +5,13 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -19,6 +23,18 @@ import java.util.List;
 public class CrimeListFragment extends Fragment {
     private RecyclerView mCrimeRecyclerView;
     private CrimeAdapter mAdapter;
+    private boolean mSubtitleVisible;
+
+    private static final String SAVED_SUBTITLE_VISIBLE = "subtitle";
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Tells the fragment manager that it should call the method
+        // onCreateOptionsMenu when it's activity receives a call to
+        // onCreateOptionsMenu.
+        setHasOptionsMenu(true);
+    }
 
     @Nullable
     @Override
@@ -45,6 +61,11 @@ public class CrimeListFragment extends Fragment {
                 )
         );
 
+        // Check for saved instance state vars
+        if (savedInstanceState != null) {
+            mSubtitleVisible = savedInstanceState.getBoolean(SAVED_SUBTITLE_VISIBLE);
+        }
+
         updateUI();
 
         // Return the view now that things are wired up.
@@ -55,6 +76,79 @@ public class CrimeListFragment extends Fragment {
     public void onResume() {
         super.onResume();
         updateUI();
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        // Used to inflate the menu and add it to the fragment
+        inflater.inflate(R.menu.fragment_crime_list, menu);
+
+        // Setup whether to to have 'show subtitle' or 'hide subtitle'
+        // as the text for the menu item.
+        MenuItem subtitleItem = menu.findItem(R.id.show_subtitle);
+        if (mSubtitleVisible) {
+            subtitleItem.setTitle(R.string.hide_subtitle);
+        } else {
+            subtitleItem.setTitle(R.string.show_subtitle);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            // If the menu item is the new crime menu item
+            case R.id.new_crime:
+                // Make a new default crime
+                Crime crime = new Crime();
+                // Add the new default crime to the CrimeLab even though it is blank
+                CrimeLab.get(getActivity()).addCrime(crime);
+                // Create a new intent to get the details page started.
+                Intent intent = CrimePagerActivity.newIntent(
+                        getActivity(),
+                        crime.getId()
+                );
+                // Start the Details view. No need for a result.
+                startActivity(intent);
+                // Return true to signify that there is no more processing needed.
+                return true;
+            case R.id.show_subtitle:
+                // Invert the bool value
+                mSubtitleVisible = !mSubtitleVisible;
+                // This will cause the menu to be completely redrawn, and in turn
+                // update the text for the subtitle. There has to be a better way.
+                getActivity().invalidateOptionsMenu();
+                // Update the value of the subtitle using the private method updateSubtitle
+                updateSubtitle();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // Save out the shown flag of the subtitle for screen rotation.
+        outState.putBoolean(SAVED_SUBTITLE_VISIBLE, mSubtitleVisible);
+    }
+
+    // Method to update the menu subtitle
+    private void updateSubtitle() {
+        CrimeLab crimeLab = CrimeLab.get(getActivity());
+        int crimeCount = crimeLab.getCrimes().size();
+        String subtitle = getString(
+                R.string.subtitle_format,
+                crimeCount
+        );
+
+        // Check the show bool and set the subtitle to null if it should be hidden
+        if (!mSubtitleVisible) {
+            subtitle = null;
+        }
+
+        AppCompatActivity activity = (AppCompatActivity)getActivity();
+        activity.getSupportActionBar().setSubtitle(subtitle);
     }
 
     private void updateUI() {
@@ -83,6 +177,9 @@ public class CrimeListFragment extends Fragment {
         } else {
             mAdapter.notifyDataSetChanged();
         }
+
+        // Make sure the subtitle gets updated.
+        updateSubtitle();
 
         // If you don't want anyone to be able to read your code
         // do this! It is the same as the above 4 lines.

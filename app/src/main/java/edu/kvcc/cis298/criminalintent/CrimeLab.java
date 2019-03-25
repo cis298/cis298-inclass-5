@@ -52,6 +52,11 @@ public class CrimeLab {
         }
     }
 
+    // Method to be able to add a new crime to the list.
+    public void addCrime(Crime c) {
+        mCrimes.add(c);
+    }
+
     // Getter for Crime List
     public List<Crime> getCrimes() {
         return mCrimes;
