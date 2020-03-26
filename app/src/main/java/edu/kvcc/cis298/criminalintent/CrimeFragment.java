@@ -2,7 +2,11 @@ package edu.kvcc.cis298.criminalintent;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
@@ -29,12 +33,14 @@ public class CrimeFragment extends Fragment {
     private static final String ARG_CRIME_ID = "crime_id";
     private static final String DIALOG_DATE = "DialogDate"; // For Dialog
     private static final int REQUEST_DATE = 0;
+    private static final int REQUEST_CONTACT = 1;
 
     private Crime mCrime;
     private EditText mTitleField;
     private Button mDateButton;
     private CheckBox mSolvedCheckbox;
     private Button mReportButton;
+    private Button mSuspectButton;
 
     // Setup a static method to create a new fragment.
     // This is similar to an activity asking another activity
@@ -170,6 +176,43 @@ public class CrimeFragment extends Fragment {
             }
         });
 
+        // Setup the Contact button
+        final Intent pickContact = new Intent(
+                // We want to pick something
+                Intent.ACTION_PICK,
+                // From the database that contains the contacts.
+                ContactsContract.Contacts.CONTENT_URI
+        );
+        // Adding this line will prevent the OS from finding a valid contacts app.
+//        pickContact.addCategory(Intent.CATEGORY_HOME);
+
+        // Setup the button
+        mSuspectButton = (Button) v.findViewById(R.id.crime_suspect);
+        mSuspectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(
+                        pickContact,
+                        REQUEST_CONTACT
+                );
+            }
+        });
+        // If the crime has a suspect, set the button text to that suspect.
+        if (mCrime.getSuspect() != null) {
+            mSuspectButton.setText(mCrime.getSuspect());
+        }
+
+        // Ensure that there is a contacts app installed on the device and if there
+        // is not, disable the button so that the user can not try to select a contact.
+        PackageManager packageManager = getActivity().getPackageManager();
+        if (packageManager.resolveActivity(
+                pickContact,
+                PackageManager.MATCH_DEFAULT_ONLY
+        ) == null) {
+            // Disable the button
+            mSuspectButton.setEnabled(false);
+        }
+
         return v;
     }
 
@@ -193,6 +236,49 @@ public class CrimeFragment extends Fragment {
             // Set the date on the Crime and update the text.
             mCrime.setDate(date);
             mDateButton.setText(mCrime.getDate().toString());
+        } else if (requestCode == REQUEST_CONTACT) {
+            // If the request code is for the contact picking, handle
+            // picking a contact.
+
+            // Get the Uri where the contact's info is located from the returned data
+            Uri contactUri = data.getData();
+
+            // Specify which fields you want your query to return values for
+            String[] queryFields = new String[] {
+                    ContactsContract.Contacts.DISPLAY_NAME
+            };
+
+            // Perform your query - the contactUri is like a "where" clause here
+            Cursor c = getActivity().getContentResolver()
+                    .query(
+                            contactUri,
+                            queryFields,
+                            null,
+                            null,
+                            null
+                    );
+
+            try {
+                // Double check that you actually got results
+                if (c.getCount() == 0) {
+                    return;
+                }
+
+                // Pull out the first column of the first row of data
+                // that is the suspect for the crime.
+                // It is the first column since that is all we selected,
+                // and it is the first row since we were only able to pick one contact.
+                c.moveToFirst();
+                // Get the suspect name
+                String suspect = c.getString(0);
+                // Set the suspect on the current crime
+                mCrime.setSuspect(suspect);
+                // Update the suspect button text to show the pulled out suspect
+                mSuspectButton.setText(suspect);
+            } finally {
+                // Make sure to close the cursor.
+                c.close();
+            }
         }
 
     }
