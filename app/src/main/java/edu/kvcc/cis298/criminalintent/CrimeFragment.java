@@ -10,6 +10,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +34,7 @@ public class CrimeFragment extends Fragment {
     private EditText mTitleField;
     private Button mDateButton;
     private CheckBox mSolvedCheckbox;
+    private Button mReportButton;
 
     // Setup a static method to create a new fragment.
     // This is similar to an activity asking another activity
@@ -141,6 +143,33 @@ public class CrimeFragment extends Fragment {
             }
         });
 
+        // Setup the report button
+        mReportButton = (Button) v.findViewById(R.id.crime_report);
+        mReportButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Make an implicit intent that can send data
+                Intent i = new Intent(Intent.ACTION_SEND);
+                // Set the MIME type to text/plain
+                i.setType("text/plain");
+                // Set the data on the intent
+                // Use putExtra just like an explicit intent.
+                // There are keys built into the Intent class for common types of data
+                // that would need to be sent to the implicit intents.
+                i.putExtra(Intent.EXTRA_TEXT, getCrimeReport());
+                i.putExtra(
+                        Intent.EXTRA_SUBJECT,
+                        getString(R.string.crime_report_subject)
+                );
+                // Create a chooser so that the user ALWAYS has to choose how to send it.
+                // removing this line will give them the option to set a default and never
+                // be prompted again.
+                i = Intent.createChooser(i, getString(R.string.send_report));
+                // Start the activity.
+                startActivity(i);
+            }
+        });
+
         return v;
     }
 
@@ -166,5 +195,35 @@ public class CrimeFragment extends Fragment {
             mDateButton.setText(mCrime.getDate().toString());
         }
 
+    }
+
+    // Method to generate the crime report
+    private String getCrimeReport() {
+        String solvedString = null;
+        if (mCrime.isSolved()) {
+            solvedString = getString(R.string.crime_report_solved);
+        } else {
+            solvedString = getString(R.string.crime_report_unsolved);
+        }
+
+        String dateFormat = "EEE, MMM dd";
+        String dateString = DateFormat.format(dateFormat, mCrime.getDate()).toString();
+
+        String suspect = mCrime.getSuspect();
+        if (suspect == null) {
+            suspect = getString(R.string.crime_report_no_suspect);
+        } else {
+            suspect = getString(R.string.crime_report_suspect, suspect);
+        }
+
+        String report = getString(
+                R.string.crime_report,
+                mCrime.getTitle(),
+                dateString,
+                solvedString,
+                suspect
+        );
+
+        return report;
     }
 }
