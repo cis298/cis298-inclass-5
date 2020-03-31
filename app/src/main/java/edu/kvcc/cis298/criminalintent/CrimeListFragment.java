@@ -1,6 +1,7 @@
 package edu.kvcc.cis298.criminalintent;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -8,6 +9,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,10 +19,15 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
 public class CrimeListFragment extends Fragment {
+
+    // Make a tag to use in the LogCat for debugging
+    private static final String TAG = "CrimeListFragment";
+
     private RecyclerView mCrimeRecyclerView;
     private CrimeAdapter mAdapter;
     private boolean mSubtitleVisible;
@@ -34,6 +41,9 @@ public class CrimeListFragment extends Fragment {
         // onCreateOptionsMenu when it's activity receives a call to
         // onCreateOptionsMenu.
         setHasOptionsMenu(true);
+        // Create a new instance of the inner class used to fetch the crimes
+        // on a separate thread. Execute it the method that tells it to go.
+        new FetchCrimesTask().execute();
     }
 
     @Nullable
@@ -277,4 +287,37 @@ public class CrimeListFragment extends Fragment {
             return mCrimes.size();
         }
     }
+
+    // Private inner class to do the networking that we need on a separate thread.
+    private class FetchCrimesTask extends AsyncTask<Void, Void, Void> {
+
+        // This is the method that will be executed on the thread.
+        // Once it completes the onPostExecute method will run.
+        @Override
+        protected Void doInBackground(Void... voids) {
+            // Make a new CrimeFetcher and then call the fetchCrimes method to get them.
+            new CrimeFetcher().fetchCrimes();
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
