@@ -62,6 +62,11 @@ public class CrimeLab {
         return mCrimes;
     }
 
+    // Setter for the Crime List
+    public void setCrimes(List<Crime> crimes) {
+        mCrimes = crimes;
+    }
+
     // Getter for single crime.
     public Crime getCrime(UUID id) {
         for (Crime crime : mCrimes) {

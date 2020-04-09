@@ -163,27 +163,38 @@ public class CrimeListFragment extends Fragment {
 
     private void updateUI() {
         // Get the singleton of crimes
-        CrimeLab crimeLab = CrimeLab.get(getActivity());
+//        CrimeLab crimeLab = CrimeLab.get(getActivity());
 
+        //**************************************
+        // This is where we loaded data from the CSV file.
+        //**************************************
         // If the crimeLab is empty, load the crimes to populate the list
-        if (crimeLab.isEmpty() && !crimeLab.isDataLoadedOnce()) {
-            InputStream csvStream = getResources().openRawResource(R.raw.crimes);
-            crimeLab.loadCrimeList(csvStream);
-            //crimeLab.addDefaultCrimes();
-        }
+//        if (crimeLab.isEmpty() && !crimeLab.isDataLoadedOnce()) {
+//            InputStream csvStream = getResources().openRawResource(R.raw.crimes);
+//            crimeLab.loadCrimeList(csvStream);
+//            //crimeLab.addDefaultCrimes();
+//        }
 
         // Pull out the list of crimes from the singleton
-        List<Crime> crimes = crimeLab.getCrimes();
+//        List<Crime> crimes = crimeLab.getCrimes();
 
         // If coming back from detail view, the adapter
         // may already exist and we just need to notify
         // it that the data has changed.
         if (mAdapter == null) {
+            //**********************************
+            // This is the way we were setting up the adapter
+            // before we had the setupAdapter method below
+            //**********************************
             // Create a new adapter sending over the list of crimes
-            mAdapter = new CrimeAdapter(crimes);
-            // Set the adapter for the RecyclerView as the adapter we
-            // just created.
-            mCrimeRecyclerView.setAdapter(mAdapter);
+//            mAdapter = new CrimeAdapter(crimes);
+//            // Set the adapter for the RecyclerView as the adapter we
+//            // just created.
+//            mCrimeRecyclerView.setAdapter(mAdapter);
+
+            // Call the setupAdapter method below to get the adapter setup.
+            setupAdapter();
+
         } else {
             mAdapter.notifyDataSetChanged();
         }
@@ -194,6 +205,19 @@ public class CrimeListFragment extends Fragment {
         // If you don't want anyone to be able to read your code
         // do this! It is the same as the above 4 lines.
         //mCrimeRecyclerView.setAdapter(new CrimeAdapter(crimeLab.get(getActivity()).getCrimes()));
+    }
+
+    // Setup the adapter for the RecyclerView
+    private void setupAdapter() {
+        // Check to see if the fragment has been added to an activity
+        if (isAdded()) {
+            // Get a reference to the CrimeLab
+            CrimeLab lab = CrimeLab.get(getActivity());
+            // Create a new adapter sending in the crimes list
+            mAdapter = new CrimeAdapter(lab.getCrimes());
+            // Set the adapter on the recycler view
+            mCrimeRecyclerView.setAdapter(mAdapter);
+        }
     }
 
     private class CrimeHolder
@@ -289,20 +313,25 @@ public class CrimeListFragment extends Fragment {
     }
 
     // Private inner class to do the networking that we need on a separate thread.
-    private class FetchCrimesTask extends AsyncTask<Void, Void, Void> {
+    private class FetchCrimesTask extends AsyncTask<Void, Void, List<Crime>> {
 
         // This is the method that will be executed on the thread.
         // Once it completes the onPostExecute method will run.
         @Override
-        protected Void doInBackground(Void... voids) {
+        protected List<Crime> doInBackground(Void... voids) {
             // Make a new CrimeFetcher and then call the fetchCrimes method to get them.
-            new CrimeFetcher().fetchCrimes();
-            return null;
+            return new CrimeFetcher().fetchCrimes();
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
+        protected void onPostExecute(List<Crime> crimes) {
+            // Get a reference to the crime lab
+            CrimeLab lab = CrimeLab.get(getActivity());
+            // Use the setter setCrimes to set the crimes to the passed in crime list
+            lab.setCrimes(crimes);
+            // Now that we know that we have a data source, we can setup
+            // the adapter for the recycler view.
+            setupAdapter();
         }
     }
 

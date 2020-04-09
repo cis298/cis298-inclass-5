@@ -3,11 +3,22 @@ package edu.kvcc.cis298.criminalintent;
 import android.net.Uri;
 import android.util.Log;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 
 public class CrimeFetcher {
 
@@ -71,7 +82,12 @@ public class CrimeFetcher {
         return new String(getUrlBytes(urlSpec));
     }
 
-    public void fetchCrimes() {
+    // Method to fetch the crimes from the web url and parse them into a list.
+    public List<Crime> fetchCrimes() {
+
+        // Make a list of crimes to get populated
+        List<Crime> crimes = new ArrayList<>();
+
         try {
             String url = Uri.parse("http://barnesbrothers.homeserver.com/crimeapi")
                     .buildUpon()
@@ -87,9 +103,73 @@ public class CrimeFetcher {
             // from the web service/server. After the call, we will actually
             // have the JSON that we need to parse.
             String jsonString = getUrlString(url);
+            // Log out the result from the web request
             Log.i(TAG, "Received JSON: " + jsonString);
+            // Convert the string into a JSON Array which is the root object.
+            // This will take the jsonString that we got back and put it into
+            // a jsonArray object. We have to use a jsonArray because our
+            // jsonString starts out with an Array. If it started with an object (Dictionary)
+            // "{}" we would need to use JSONObject instead of JSONArray.
+            // The code in the book uses JSONObject for their parse.
+            JSONArray jsonArray = new JSONArray(jsonString);
+
+            // Parse the jsonArray into a list of crimes.
+            parseCrimes(crimes, jsonArray);
+
         } catch (IOException ioe) {
             Log.e(TAG, "Failed to fetch items", ioe);
+        } catch (JSONException je) {
+            Log.e(TAG, "Failed to parse JSON", je);
+        }
+
+        // Return the crimes that were parsed.
+        return crimes;
+    }
+
+    // Method to parse out the crimes from the JSONArray
+    private void parseCrimes(List<Crime> crimes, JSONArray jsonArray)
+            throws IOException, JSONException {
+
+        // Loop through all of the elements in the JSONArray that was sent into
+        // this method
+        for (int i=0; i<jsonArray.length(); i++) {
+            // Fetch a single JSONObject out from the JSONArray based on
+            // the current index that we are on.
+            JSONObject crimeJsonObject = jsonArray.getJSONObject(i);
+
+            // Pull out the data and start making crimes from it.
+            String uuidString = crimeJsonObject.getString("uuid");
+            UUID uuidForNewCrime = UUID.fromString(uuidString);
+
+            String title = crimeJsonObject.getString("title");
+            Date crimeDate = new Date();
+            try {
+                DateFormat format = new SimpleDateFormat("yyy-MM-dd", Locale.ENGLISH);
+                crimeDate = format.parse(crimeJsonObject.getString("incident_date"));
+            } catch (Exception e) {
+                Log.e(TAG, "Unable to parse date");
+                crimeDate = new Date();
+            }
+
+            boolean isSolved = crimeJsonObject.getString("is_solved").equals("1");
+
+            // Create a new Crime with the UUID we pulled out.
+            Crime crime = new Crime(
+                    uuidForNewCrime,
+                    title,
+                    crimeDate,
+                    isSolved
+            );
+
+            // Add crime to the list
+            crimes.add(crime);
         }
     }
+
+
+
+
+
+
+
 }
